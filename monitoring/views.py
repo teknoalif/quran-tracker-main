@@ -24,26 +24,29 @@ def kirim_ke_spreadsheet(data_list):
         creds_json = os.getenv("GOOGLE_CREDENTIALS")
         
         if not creds_json:
+            print("LOG: GOOGLE_CREDENTIALS kosong di Vercel!")
             return False
             
         creds_dict = json.loads(creds_json)
         
-        # PERBAIKAN KRUSIAL: Pastikan format private_key benar
+        # MEMBERSIHKAN PRIVATE KEY (Kunci Keberhasilan)
         if 'private_key' in creds_dict:
-            creds_dict['private_key'] = creds_dict['private_key'].replace('\\n', '\n')
+            # Mengganti double backslash dan memastikan formatnya bersih
+            creds_dict['private_key'] = creds_dict['private_key'].replace('\\n', '\n').strip()
             
         creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
         client = gspread.authorize(creds)
         
+        # Buka Spreadsheet
         sheet = client.open_by_key(SPREADSHEET_ID)
+        # Pastikan menulis ke tab pertama
         worksheet = sheet.get_worksheet(0) 
         
-        # Kirim data
+        # Kirim data secara RAW
         worksheet.append_rows(data_list, value_input_option='RAW')
         return True
     except Exception as e:
-        # Ini akan muncul di logs Vercel jika gagal
-        print(f"Error detail: {str(e)}")
+        print(f"DEBUG ERROR SHEETS: {str(e)}")
         return False
 
 def riwayat_laporan(request):

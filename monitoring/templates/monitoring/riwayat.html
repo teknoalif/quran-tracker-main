@@ -92,19 +92,26 @@
         const btn = document.getElementById('btnSimpan'); 
         const info = document.getElementById('timer-info');
         
-        // Selalu aktif agar Pak Alif bisa memantau kapan saja
         btn.classList.remove('disabled');
         info.innerText = "KONEKSI SHEETS SIAP";
-        info.className = "fw-bold text-success animate__animated animate__pulse animate__infinite";
+        info.className = "fw-bold text-success";
     }
     setInterval(updateClock, 1000); 
     updateClock();
 
-    // Efek loading saat klik simpan
+    // Logika Kirim Data + Buka Spreadsheet Otomatis
     document.getElementById('formLaporan').onsubmit = function() {
         const btn = document.getElementById('btnSimpan');
-        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> MENGIRIM DATA...';
+        
+        // 1. Beri efek loading di tombol
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> SEDANG MENGIRIM...';
         btn.classList.add('disabled');
+
+        // 2. Buka Spreadsheet di Tab Baru (Gunakan ID yang baru Pak Alif kasih)
+        // Kita beri sedikit delay agar browser tidak memblokir aksi POST form
+        setTimeout(function() {
+            window.open("https://docs.google.com/spreadsheets/d/1gKsf0NS1MkEC5-GtN4eRFhDqWLYEaGFMhAkfEYJ8Fvc/edit", "_blank");
+        }, 100);
     };
 </script>
 
