@@ -2,9 +2,8 @@ import os
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-veb2^qdh9ws6zytj&acfuq2%-ldn_nrg63efn3f)p5%4vxe(x%')
-
-DEBUG = os.getenv('DEBUG', 'True') == 'True'
+SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-kakalif-key-paling-aman')
+DEBUG = False 
 ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '*').split(',')
 
 INSTALLED_APPS = [
@@ -29,6 +28,15 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'core.urls'
+WSGI_APPLICATION = 'core.wsgi.application'
+
+# DATABASE: Pakai memory di Vercel agar tidak error 500
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': ':memory:', 
+    }
+}
 
 TEMPLATES = [
     {
@@ -37,7 +45,6 @@ TEMPLATES = [
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
-                'django.template.context_processors.debug',
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
@@ -46,33 +53,11 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'core.wsgi.application'
-
-# STRATEGI DATABASE:
-# Di Vercel pakai memory agar tidak crash, di laptop tetap pakai file agar login tidak hilang
-if os.getenv('VERCEL'):
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': ':memory:',
-        }
-    }
-else:
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
-        }
-    }
-
 SPREADSHEET_ID = '1Rryo4OiOptMDxtX5c-RNf-fdtrgRZgE67stgcu37YQQ'
 GOOGLE_SHEETS_CREDENTIALS = os.path.join(BASE_DIR, 'credentials.json')
 
+STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 TIME_ZONE = 'Asia/Jakarta'
 USE_TZ = True
-STATIC_URL = 'static/'
-STATIC_ROOT = BASE_DIR / 'staticfiles'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-
-LOGIN_REDIRECT_URL = '/'
-LOGOUT_REDIRECT_URL = '/accounts/login/'
