@@ -30,8 +30,15 @@ def kirim_ke_spreadsheet(data_list):
         client = gspread.authorize(creds)
         
         # Buka berdasarkan ID baru Bapak
+        
+       # Buka berdasarkan ID baru Bapak
         sheet = client.open_by_key("18knwd2i4FR0XOX0Bb22No66venosWUsma5DbTZ6u9_s")
-        worksheet = sheet.get_worksheet(0) 
+        
+        # Panggil langsung nama tabnya agar lebih akurat
+        try:
+            worksheet = sheet.worksheet("Sheet1")
+        except:
+            worksheet = sheet.get_worksheet(0) # Cadangan jika nama tab berbeda
         
         # Gunakan 'USER_ENTERED' agar angka otomatis terbaca sebagai angka di Sheet
         worksheet.append_rows(data_list, value_input_option='USER_ENTERED')
