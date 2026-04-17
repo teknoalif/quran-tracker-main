@@ -4,7 +4,7 @@ import gspread
 from django.shortcuts import render, redirect
 from datetime import date, datetime
 from oauth2client.service_account import ServiceAccountCredentials
-# Import data santri dari file terpisah
+# PANGGIL DATA DARI FILE SEBELAH
 from .data_santri import DATA_SANTRI
 
 SPREADSHEET_ID = "1gKsf0NS1MkEC5-GtN4eRFhDqWLYEaGFMhAkfEYJ8Fvc"
@@ -29,7 +29,6 @@ def riwayat_laporan(request):
     tanggal_str = request.GET.get("tanggal", str(date.today()))
     kelas_selected = request.GET.get("kelas", "XA")
     nama_list = DATA_SANTRI.get(kelas_selected, [])
-    # Buat data santri dummy untuk template
     santris = [{"id": i, "nama": nama} for i, nama in enumerate(nama_list)]
     
     return render(request, "monitoring/riwayat.html", {
@@ -58,7 +57,7 @@ def simpan_laporan(request):
             try:
                 jml = int(akhir) - int(awal) + 1 if (int(akhir) >= int(awal) and int(awal) > 0) else 0
             except: jml = 0
-            data_sheet.append([waktu, tanggal, "User", kelas, names[i], hadir[i], khatam[i], awal, akhir, jml])
+            data_sheet.append([waktu, tanggal, "Guru", kelas, names[i], hadir[i], khatam[i], awal, akhir, jml])
             
         if data_sheet:
             kirim_ke_spreadsheet(data_sheet)
