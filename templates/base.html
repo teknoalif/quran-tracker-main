@@ -1,39 +1,158 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SABAR (Santri Gemar Al Qur'an</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-    <style>
-        body { background-color: #f8f9fa; }
-        .no-print { margin-bottom: 20px; }
-        @media print { .no-print { display: none !important; } }
-        .navbar-brand { font-size: 1.1rem; line-height: 1.2; }
-    </style>
-</head>
-<body>
-    <nav class="navbar navbar-dark bg-dark mb-4 no-print">
-        <div class="container">
-            <a class="navbar-brand fw-bold text-wrap" href="/" style="max-width: 250px;">
-                INPUT LAPORAN JAM PERTAMA AL QURAN
-            </a>
-            <div class="d-flex align-items-center">
-                <a href="https://docs.google.com/spreadsheets/d/1gKsf0NS1MkEC5-GtN4eRFhDqWLYEaGFMhAkfEYJ8Fvc/edit?usp=sharing" 
-                   target="_blank" class="btn btn-success btn-sm me-3">
-                    <i class="bi bi-file-earmark-spreadsheet"></i> Rekap Utama
-                </a>
-                <span class="navbar-text me-3 text-white small d-none d-md-inline">Ustaz: <strong>{{ user.username }}</strong></span>
-                <form method="post" action="{% url 'logout' %}" style="display:inline;">
-                    {% csrf_token %}
-                    <button type="submit" class="btn btn-outline-light btn-sm">Keluar</button>
-                </form>
-            </div>
-        </div>
-    </nav>
-    <div class="container">
-        {% block content %}{% endblock %}
-    </div>
-<footer class="text-center py-3 no-print" style="font-size: 0.8rem; color: #6c757d;"> </footer> </body>
-</html>
+import json
+import os
+import gspread
+from django.shortcuts import render, redirect
+from datetime import date, datetime
+from oauth2client.service_account import ServiceAccountCredentials
+from django.contrib import messages
+
+try:
+    from .data_santri import DATA_SANTRI
+except ImportError:
+    DATA_SANTRI = {}
+
+# --- KONFIGURASI ---
+SPREADSHEET_ID = "18knwd2i4FR0XOX0Bb22No66venosWUsma5DbTZ6u9_s"
+KELAS_CHOICES = [(k, f"Kelas {k}") for k in DATA_SANTRI.keys()] if DATA_SANTRI else []
+
+def get_gspread_client():
+    """Fungsi pembantu untuk autentikasi Google Sheets"""
+    scope = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
+    creds_json = os.getenv("GOOGLE_CREDENTIALS")
+    if not creds_json:
+        return None
+    
+    try:
+        creds_dict = json.loads(creds_json)
+        if 'private_key' in creds_dict:
+            creds_dict['private_key'] = creds_dict['private_key'].replace('\\n', '\n').strip()
+        
+        creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
+        return gspread.authorize(creds)
+    except Exception as e:
+        print(f"Error Auth: {e}")
+        return None
+
+def kirim_ke_spreadsheet(data_list):
+    try:
+        client = get_gspread_client()
+        if not client: return False, "Kredensial tidak ditemukan/salah"
+        
+        sheet = client.open_by_key(SPREADSHEET_ID)
+        try:
+            worksheet = sheet.worksheet("Sheet1")
+        except:
+            worksheet = sheet.get_worksheet(0)
+            
+        # Menggunakan USER_ENTERED agar format tanggal & angka di Sheet otomatis benar
+        worksheet.append_rows(data_list, value_input_option='USER_ENTERED')
+        return True, "Berhasil"
+    except Exception as e:
+        return False, str(e)
+
+def riwayat_laporan(request):
+    tanggal_str = request.GET.get("tanggal", str(date.today()))
+    kelas_selected = request.GET.get("kelas", "XA")
+    
+    nama_list = DATA_SANTRI.get(kelas_selected, [])
+    
+    # --- LOGIKA AMBIL DATA DARI SHEETS ---
+    data_terinput = {}
+    try:
+        client = get_gspread_client()
+        if client:
+            sheet = client.open_by_key(SPREADSHEET_ID)
+            worksheet = sheet.get_worksheet(0)
+            records = worksheet.get_all_records()
+            
+            for row in records:
+                # Normalisasi nama kolom (menghapus spasi dan case-insensitive)
+                # Mencari data berdasarkan Tanggal dan Kelas yang dipilih
+                row_tanggal = str(row.get('Tanggal', '')).strip()
+                row_kelas = str(row.get('Kelas', '')).strip()
+                row_nama = str(row.get('Nama', '')).strip()
+
+                if row_tanggal == tanggal_str and row_kelas == kelas_selected:
+                    data_terinput[row_nama] = {
+                        'hadir': row.get('Hadir', 'Hadir'),
+                        'khatam': row.get('Khatam', 0),
+                        'awal': row.get('Awal', ''),
+                        'akhir': row.get('Akhir', ''),
+                        'jml': row.get('Jml', 0)
+                    }
+    except Exception as e:
+        print(f"Gagal tarik data: {e}")
+
+    # Gabungkan data default dengan data dari Sheets
+    santris = []
+    for i, nama in enumerate(nama_list):
+        info = data_terinput.get(nama, {})
+        santris.append({
+            "id": i,
+            "nama": nama,
+            "terisi": True if info else False,
+            "hadir": info.get('hadir', 'Hadir'),
+            "khatam": info.get('khatam', 0),
+            "awal": info.get('awal', ''),
+            "akhir": info.get('akhir', ''),
+            "jml": info.get('jml', 0)
+        })
+    
+    return render(request, "monitoring/riwayat.html", {
+        "santris": santris,
+        "tanggal_sekarang": tanggal_str,
+        "kelas_list": KELAS_CHOICES,
+        "kelas_selected": kelas_selected,
+    })
+
+def simpan_laporan(request):
+    # Nilai default untuk redirect jika terjadi masalah
+    tanggal = str(date.today())
+    kelas = "XA"
+    
+    if request.method == "POST":
+        tanggal = request.POST.get("tanggal")
+        kelas = request.POST.get("kelas_hidden")
+        names = request.POST.getlist("santri_nama")
+        hadir = request.POST.getlist("status_kehadiran")
+        khatam = request.POST.getlist("jumlah_khatam")
+        h_awal = request.POST.getlist("hal_awal")
+        h_akhir = request.POST.getlist("hal_akhir")
+        
+        data_sheet = []
+        waktu = datetime.now().strftime("%d/%m/%Y %H:%M")
+        
+        for i in range(len(names)):
+            try:
+                # Validasi input halaman
+                val_awal = h_awal[i] if (i < len(h_awal) and h_awal[i]) else "0"
+                val_akhir = h_akhir[i] if (i < len(h_akhir) and h_akhir[i]) else "0"
+                
+                awal_int = int(val_awal)
+                akhir_int = int(val_akhir)
+                # Hitung jumlah: (Akhir - Awal + 1) jika logis
+                jml = akhir_int - awal_int + 1 if (akhir_int >= awal_int and awal_int > 0) else 0
+                
+                data_sheet.append([
+                    waktu, 
+                    tanggal, 
+                    "Ustaz/Guru", 
+                    kelas, 
+                    names[i], 
+                    hadir[i] if i < len(hadir) else "Hadir", 
+                    khatam[i] if i < len(khatam) else "0", 
+                    val_awal, 
+                    val_akhir, 
+                    jml
+                ])
+            except:
+                continue
+            
+        if data_sheet:
+            sukses, pesan = kirim_ke_spreadsheet(data_sheet)
+            if sukses:
+                messages.success(request, "Alhamdulillah, data berhasil disimpan ke Sheets!")
+            else:
+                messages.error(request, f"Waduh, gagal kirim: {pesan}")
+                
+    return redirect(f"/?tanggal={tanggal}&kelas={kelas}")
