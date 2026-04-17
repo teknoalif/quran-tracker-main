@@ -4,49 +4,36 @@ import gspread
 from django.shortcuts import render, redirect
 from datetime import date, datetime
 from oauth2client.service_account import ServiceAccountCredentials
-# PANGGIL DATA DARI FILE SEBELAH
+
 try:
     from .data_santri import DATA_SANTRI
 except ImportError:
     DATA_SANTRI = {}
 
-# --- KONFIGURASI ---
-SPREADSHEET_ID = "1gKsf0NS1MkEC5-GtN4eRFhDqWLYEaGFMhAkfEYJ8Fvc"
-# Gunakan list comprehension yang aman jika DATA_SANTRI kosong
+# --- ID SPREADSHEET BARU BAPAK ---
+SPREADSHEET_ID = "18knwd2i4FR0XOX0Bb22No66venosWUsma5DbTZ6u9_s"
 KELAS_CHOICES = [(k, f"Kelas {k}") for k in DATA_SANTRI.keys()] if DATA_SANTRI else []
 
 def kirim_ke_spreadsheet(data_list):
     try:
-        scope = [
-            "https://www.googleapis.com/auth/spreadsheets",
-            "https://www.googleapis.com/auth/drive"
-        ]
+        scope = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
         creds_json = os.getenv("GOOGLE_CREDENTIALS")
-        
-        if not creds_json:
-            print("LOG: GOOGLE_CREDENTIALS kosong di Vercel!")
-            return False
+        if not creds_json: return False
             
         creds_dict = json.loads(creds_json)
-        
-        # MEMBERSIHKAN PRIVATE KEY (Kunci Keberhasilan)
         if 'private_key' in creds_dict:
-            # Mengganti double backslash dan memastikan formatnya bersih
             creds_dict['private_key'] = creds_dict['private_key'].replace('\\n', '\n').strip()
             
         creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
         client = gspread.authorize(creds)
         
-        # Buka Spreadsheet
         sheet = client.open_by_key(SPREADSHEET_ID)
-        # Pastikan menulis ke tab pertama
         worksheet = sheet.get_worksheet(0) 
         
-        # Kirim data secara RAW
         worksheet.append_rows(data_list, value_input_option='RAW')
         return True
     except Exception as e:
-        print(f"DEBUG ERROR SHEETS: {str(e)}")
+        print(f"Error Sheets: {str(e)}")
         return False
 
 def riwayat_laporan(request):

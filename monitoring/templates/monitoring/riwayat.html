@@ -99,20 +99,17 @@
     setInterval(updateClock, 1000); 
     updateClock();
 
-    // Logika Kirim Data + Buka Spreadsheet Otomatis
-    document.getElementById('formLaporan').onsubmit = function() {
-        const btn = document.getElementById('btnSimpan');
-        
-        // 1. Beri efek loading di tombol
-        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> SEDANG MENGIRIM...';
-        btn.classList.add('disabled');
+    // Bagian script di riwayat.html
+document.getElementById('formLaporan').onsubmit = function() {
+    const btn = document.getElementById('btnSimpan');
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> MENGIRIM...';
+    btn.classList.add('disabled');
 
-        // 2. Buka Spreadsheet di Tab Baru (Gunakan ID yang baru Pak Alif kasih)
-        // Kita beri sedikit delay agar browser tidak memblokir aksi POST form
-        setTimeout(function() {
-            window.open("https://docs.google.com/spreadsheets/d/1gKsf0NS1MkEC5-GtN4eRFhDqWLYEaGFMhAkfEYJ8Fvc/edit", "_blank");
-        }, 100);
-    };
+    setTimeout(function() {
+        // Link Spreadsheet BARU
+        window.open("https://docs.google.com/spreadsheets/d/18knwd2i4FR0XOX0Bb22No66venosWUsma5DbTZ6u9_s/edit", "_blank");
+    }, 100);
+};
 </script>
 
 <footer class="mt-5 text-center py-3 text-muted small">

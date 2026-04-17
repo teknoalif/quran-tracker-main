@@ -60,7 +60,8 @@ TEMPLATES = [
 ]
 
 # --- GOOGLE SHEETS CONFIG ---
-SPREADSHEET_ID = '1gKsf0NS1MkEC5-GtN4eRFhDqWLYEaGFMhAkfEYJ8Fvc'
+# settings.py
+SPREADSHEET_ID = '18knwd2i4FR0XOX0Bb22No66venosWUsma5DbTZ6u9_s'
 
 # Static Files Configuration
 STATIC_URL = '/static/'
