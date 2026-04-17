@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title>Input Masal - Al Binaa</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light p-4">
+    <div class="container bg-white shadow-sm p-4 rounded">
+        <div class="d-flex justify-content-between mb-3">
+            <h4>Input Kolektif Tilawah Santri</h4>
+            <a href="/" class="btn btn-outline-secondary btn-sm">Kembali ke Riwayat</a>
+        </div>
+
+        <form method="GET" class="row g-2 mb-4 bg-light p-3 border rounded">
+            <div class="col-md-3">
+                <label class="small fw-bold">Tanggal:</label>
+                <input type="date" name="tgl" value="{{ tgl_aktif }}" class="form-control form-control-sm">
+            </div>
+            <div class="col-md-2">
+                <label class="small fw-bold">Target Halaman:</label>
+                <input type="number" name="target" value="{{ target_hal }}" class="form-control form-control-sm">
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn btn-dark btn-sm w-100">Set Header</button>
+            </div>
+        </form>
+
+        <form method="POST">
+            {% csrf_token %}
+            <table class="table table-sm table-hover border">
+                <thead class="table-dark">
+                    <tr>
+                        <th width="5%">No</th>
+                        <th width="25%">Nama Santri</th>
+                        <th width="15%">Hal Awal</th>
+                        <th width="15%">Hal Akhir</th>
+                        <th width="30%">Catatan (Izin/Sakit/Lomba)</th>
+                        <th width="10%">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s in santris %}
+                    {% with exist=data_map|dict_key:s.id %}
+                    <tr>
+                        <td class="text-center">{{ forloop.counter }}</td>
+                        <td>
+                            <input type="hidden" name="santri_id" value="{{ s.id }}">
+                            <strong>{{ s.nama }}</strong>
+                        </td>
+                        <td>
+                            <input type="number" name="hal_awal" class="form-control form-control-sm" 
+                                   value="{% if exist %}{{ exist.halaman_awal }}{% endif %}" placeholder="Mulai">
+                        </td>
+                        <td>
+                            <input type="number" name="hal_akhir" class="form-control form-control-sm" 
+                                   value="{% if exist %}{{ exist.halaman_akhir }}{% endif %}" placeholder="Selesai">
+                        </td>
+                        <td>
+                            <input type="text" name="catatan" class="form-control form-control-sm" 
+                                   value="{% if exist %}{{ exist.catatan }}{% endif %}" placeholder="Keterangan...">
+                        </td>
+                        <td class="text-center">
+                            {% if exist %}
+                                {% if exist.mencapai_target %}<span class="badge bg-success">H</span>
+                                {% else %}<span class="badge bg-danger">!</span>{% endif %}
+                            {% else %}-{% endif %}
+                        </td>
+                    </tr>
+                    {% endwith %}
+                    {% endfor %}
+                </tbody>
+            </table>
+            <div class="sticky-bottom bg-white p-3 border-top text-end">
+                <button type="submit" class="btn btn-primary btn-lg shadow">Simpan Semua Data ({{ santris|length }} Santri)</button>
+            </div>
+        </form>
+    </div>
+</body>
+</html>

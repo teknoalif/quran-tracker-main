@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% load custom_filters %}
+{% block content %}
+<div class="card shadow-sm border-0">
+    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+        <h5 class="mb-0 fw-bold">INPUT LAPORAN JAM PERTAMA</h5>
+        <div id="clock" class="badge bg-white text-primary"></div>
+    </div>
+    <div class="card-body p-4">
+        <form method="get" class="row g-3 mb-4 bg-light p-3 rounded border">
+            <div class="col-md-4"><input type="date" name="tanggal" class="form-control" value="{{ tanggal_sekarang }}" onchange="this.form.submit()"></div>
+            <div class="col-md-4"><select name="kelas" class="form-select" onchange="this.form.submit()">{% for k, v in kelas_list %}<option value="{{ k }}" {% if k == kelas_selected %}selected{% endif %}>Kelas {{ v }}</option>{% endfor %}</select></div>
+            <div class="col-md-4 text-end"><span id="timer-info" class="fw-bold"></span></div>
+        </form>
+        <form method="post" action="{% url 'simpan_laporan' %}" id="formLaporan">
+            {% csrf_token %}<input type="hidden" name="tanggal" value="{{ tanggal_sekarang }}"><input type="hidden" name="kelas_hidden" value="{{ kelas_selected }}">
+            <div class="table-responsive">
+                <table class="table align-middle border">
+                    <thead class="table-dark text-center"><tr><th>Nama</th><th>Hadir</th><th>Khatam</th><th>Mulai</th><th>Akhir</th><th style="width:180px">Status / Edit</th></tr></thead>
+                    <tbody>
+                        {% for s in santris %}{% with l=data_map|get_item:s.id %}
+                        <tr class="row-{{ l.status_kehadiran|default:'hadir'|lower }}">
+                            <td class="fw-bold">{{ s.nama }}<input type="hidden" name="santri_id" value="{{ s.id }}"></td>
+                            <td><select name="status_kehadiran" class="form-select form-select-sm"><option value="Hadir" {% if l.status_kehadiran == "Hadir" %}selected{% endif %}>Hadir</option><option value="Sakit" {% if l.status_kehadiran == "Sakit" %}selected{% endif %}>Sakit</option><option value="Izin" {% if l.status_kehadiran == "Izin" %}selected{% endif %}>Izin</option><option value="Alpa" {% if l.status_kehadiran == "Alpa" %}selected{% endif %}>Alpa</option></select></td>
+                            <td><input type="number" name="jumlah_khatam" class="form-control form-control-sm" value="{{ l.jumlah_khatam|default:0 }}"></td>
+                            <td><input type="number" name="hal_awal" class="form-control form-control-sm" value="{{ l.halaman_awal|default:'' }}" placeholder="{{ auto_fill_data|get_item:s.id }}"></td>
+                            <td><input type="number" name="hal_akhir" class="form-control form-control-sm" value="{{ l.halaman_akhir|default:'' }}"></td>
+                            <td class="text-center">
+                                <div class="d-flex align-items-center justify-content-center">
+                                    {% if l %}{% with total=l.halaman_akhir|subtract:l.halaman_awal|add:1 %}<span class="badge {% if total >= 8 %}bg-success{% else %}bg-danger{% endif %} me-2">{% if total >= 8 %}Tercapai{% else %}Kurang{% endif %}</span>{% endwith %}{% endif %}
+                                    <button type="submit" name="single_save" value="{{ s.id }}" class="btn btn-sm btn-outline-primary" title="Edit Baris Ini"><i class="bi bi-pencil-square"></i> Edit</button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endwith %}{% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <button type="submit" id="btnSimpan" class="btn btn-success w-100 btn-lg fw-bold mt-3 disabled">SIMPAN SEMUA</button>
+        </form>
+    </div>
+</div>
+<script>
+    function updateClock() {
+        const now = new Date(); document.getElementById('clock').innerText = now.toLocaleTimeString('id-ID') + " WIB";
+        const isAdmin = ['alif', 'nurmawan', 'reza'].includes('{{ request.user.username|lower }}');
+        const btn = document.getElementById('btnSimpan'); const info = document.getElementById('timer-info');
+        if (isAdmin) { btn.classList.remove('disabled'); btn.innerText = 'SIMPAN (ADMIN)'; info.innerText = "MODE ADMIN"; return; }
+        const time = now.getHours() * 60 + now.getMinutes();
+        if (time >= 445 && time <= 455) { btn.classList.remove('disabled'); btn.innerText = 'SIMPAN SEMUA'; info.innerText = "SESI AKTIF"; }
+        else { btn.classList.add('disabled'); info.innerText = "SESI TERKUNCI"; }
+    }
+    setInterval(updateClock, 1000); updateClock();
+</script>
+<footer class="mt-5 text-center py-3 text-muted small">WebDev by kak Alif</footer>
+{% endblock %}
