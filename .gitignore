@@ -8,3 +8,5 @@ credentials.json
 service_account.json
 staticfiles/
 .vercel/
+.vercel
+.env*.local

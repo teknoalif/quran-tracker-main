@@ -18,8 +18,10 @@ KELAS_CHOICES = [(k, f"Kelas {k}") for k in DATA_SANTRI.keys()] if DATA_SANTRI e
 def kirim_ke_spreadsheet(data_list):
     try:
         scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-        creds_json = os.getenv("GOOGLE_CREDENTIALS")
+        creds_json = os.getenv("GOOGLE_CREDENTIALS") # Mengambil dari Environment Variable Vercel
+        
         if creds_json:
+            # Vercel kadang mengirimkan string dengan escape character, kita bersihkan
             creds_dict = json.loads(creds_json)
             creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
             client = gspread.authorize(creds)
@@ -27,7 +29,7 @@ def kirim_ke_spreadsheet(data_list):
             worksheet.append_rows(data_list)
             return True
         else:
-            print("Error: GOOGLE_CREDENTIALS tidak ditemukan di Environment Variables.")
+            print("Error: GOOGLE_CREDENTIALS tidak ditemukan!")
     except Exception as e:
         print(f"Error Sheets: {e}")
     return False

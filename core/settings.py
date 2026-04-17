@@ -4,23 +4,25 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-kakalif-key-paling-aman')
 
-# Biarkan True dulu untuk melihat detail error jika masih gagal
+# Set False di produksi Vercel, True hanya untuk debug lokal
 DEBUG = os.getenv('DEBUG', 'False') == 'True'
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '*').split(',')
+
+# ALLOWED_HOSTS wajib mencakup domain Vercel dan domain pribadi
+ALLOWED_HOSTS = ['.vercel.app', 'sabar.kakalif.my.id', 'localhost', '127.0.0.1']
 
 INSTALLED_APPS = [
-    'monitoring',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'monitoring', 
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware', # Menangani file statis
+    'whitenoise.middleware.WhiteNoiseMiddleware', # Menangani file statis tanpa ribet
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -33,8 +35,7 @@ ROOT_URLCONF = 'core.urls'
 WSGI_APPLICATION = 'core.wsgi.application'
 
 # DATABASE STRATEGY
-# Jika di Vercel, kita pakai sqlite memory. 
-# Tapi ingat: Tanpa database permanen, login admin tidak akan bisa simpan session.
+# Menggunakan memory agar tidak error 'ReadOnly File System' di Vercel
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
@@ -45,7 +46,7 @@ DATABASES = {
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'templates'],
+        'DIRS': [os.path.join(BASE_DIR, 'templates')], # Jalur absolut lebih aman
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -58,16 +59,16 @@ TEMPLATES = [
     },
 ]
 
-# Google Sheets Configuration
-SPREADSHEET_ID = '1Rryo4OiOptMDxtX5c-RNf-fdtrgRZgE67stgcu37YQQ'
-GOOGLE_SHEETS_CREDENTIALS = os.path.join(BASE_DIR, 'credentials.json')
+# --- GOOGLE SHEETS CONFIG ---
+SPREADSHEET_ID = '1gKsf0NS1MkEC5-GtN4eRFhDqWLYEaGFMhAkfEYJ8Fvc'
 
 # Static Files Configuration
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-# Agar whitenoise tidak error saat file statis tidak ditemukan
-WHITENOISE_USE_FINDERS = True
+
+# Setting Whitenoise agar tetap jalan meskipun file static belum di-collect
 WHITENOISE_MANIFEST_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
 
 TIME_ZONE = 'Asia/Jakarta'
 USE_TZ = True
