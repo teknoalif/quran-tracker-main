@@ -3,7 +3,7 @@
 {% block content %}
 <div class="card shadow-sm border-0">
     <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-        <h5 class="mb-0 fw-bold">INPUT LAPORAN JAM PERTAMA</h5>
+        <h5 class="mb-0 fw-bold">INPUT LAPORAN JAM PERTAMA AL QUR'AN</h5>
         <div id="clock" class="badge bg-white text-primary"></div>
     </div>
     <div class="card-body p-4">
@@ -30,53 +30,46 @@
                 <table class="table align-middle border">
                     <thead class="table-dark text-center">
                         <tr>
-                            <th>Nama</th>
-                            <th>Hadir</th>
+                            <th>Nama Santri</th>
+                            <th>Status Hadir</th>
                             <th>Khatam</th>
-                            <th>Mulai</th>
-                            <th>Akhir</th>
-                            <th style="width:180px">Status / Edit</th>
+                            <th>Hal. Mulai</th>
+                            <th>Hal. Akhir</th>
+                            <th style="width:100px">Status</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for s in santris %}
-                        {% with l=data_map|get_item:s.id %}
-                        <tr class="row-{{ l.status_kehadiran|default:'hadir'|lower }}">
+                        <tr>
                             <td class="fw-bold">
                                 {{ s.nama }}
-                                <input type="hidden" name="santri_nama" value="{{ s.nama }}">
                                 <input type="hidden" name="santri_id" value="{{ s.id }}">
+                                <input type="hidden" name="santri_nama" value="{{ s.nama }}">
                             </td>
                             <td>
                                 <select name="status_kehadiran" class="form-select form-select-sm">
-                                    <option value="Hadir" {% if l.status_kehadiran == "Hadir" %}selected{% endif %}>Hadir</option>
-                                    <option value="Sakit" {% if l.status_kehadiran == "Sakit" %}selected{% endif %}>Sakit</option>
-                                    <option value="Izin" {% if l.status_kehadiran == "Izin" %}selected{% endif %}>Izin</option>
-                                    <option value="Alpa" {% if l.status_kehadiran == "Alpa" %}selected{% endif %}>Alpa</option>
+                                    <option value="Hadir">Hadir</option>
+                                    <option value="Sakit">Sakit</option>
+                                    <option value="Izin">Izin</option>
+                                    <option value="Alpa">Alpa</option>
                                 </select>
                             </td>
-                            <td><input type="number" name="jumlah_khatam" class="form-control form-control-sm" value="{{ l.jumlah_khatam|default:0 }}"></td>
-                            <td><input type="number" name="hal_awal" class="form-control form-control-sm" value="{{ l.halaman_awal|default:'' }}" placeholder="{{ auto_fill_data|get_item:s.id }}"></td>
-                            <td><input type="number" name="hal_akhir" class="form-control form-control-sm" value="{{ l.halaman_akhir|default:'' }}"></td>
+                            <td><input type="number" name="jumlah_khatam" class="form-control form-control-sm" value="0"></td>
+                            <td><input type="number" name="hal_awal" class="form-control form-control-sm" placeholder="Mulai"></td>
+                            <td><input type="number" name="hal_akhir" class="form-control form-control-sm" placeholder="Akhir"></td>
                             <td class="text-center">
-                                <div class="d-flex align-items-center justify-content-center">
-                                    {% if l %}
-                                        {% with total=l.halaman_akhir|subtract:l.halaman_awal|add:1 %}
-                                        <span class="badge {% if total >= 8 %}bg-success{% else %}bg-danger{% endif %} me-2">
-                                            {% if total >= 8 %}Tercapai{% else %}Kurang{% endif %}
-                                        </span>
-                                        {% endwith %}
-                                    {% endif %}
-                                    <button type="button" class="btn btn-sm btn-outline-secondary disabled" title="Edit Baris Ini"><i class="bi bi-pencil-square"></i> Edit</button>
-                                </div>
+                                <span class="badge bg-secondary">Baru</span>
                             </td>
                         </tr>
-                        {% endwith %}
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center text-danger">Data santri tidak ditemukan untuk kelas ini.</td>
+                        </tr>
                         {% endfor %}
                     </tbody>
                 </table>
             </div>
-            <button type="submit" id="btnSimpan" class="btn btn-success w-100 btn-lg fw-bold mt-3">SIMPAN SEMUA</button>
+            <button type="submit" id="btnSimpan" class="btn btn-success w-100 btn-lg fw-bold mt-3">KIRIM DATANYA</button>
         </form>
     </div>
 </div>
@@ -86,17 +79,17 @@
         const now = new Date(); 
         document.getElementById('clock').innerText = now.toLocaleTimeString('id-ID') + " WIB";
         
-        // Mode Admin sementara kita aktifkan terus agar Bapak bisa tes kapan saja
         const btn = document.getElementById('btnSimpan'); 
         const info = document.getElementById('timer-info');
         
+        // Selalu aktifkan tombol untuk memudahkan Pak Alif mengetes
         btn.classList.remove('disabled');
-        btn.innerText = 'SIMPAN KE GOOGLE SHEETS';
-        info.innerText = "SISTEM AKTIF";
+        info.innerText = "SISTEM SIAP KIRIM";
+        info.className = "fw-bold text-success";
     }
     setInterval(updateClock, 1000); 
     updateClock();
 </script>
 
-<footer class="mt-5 text-center py-3 text-muted small">WebDev by kak Alif - Sesuai Spreadsheet</footer>
+<footer class="mt-5 text-center py-3 text-muted small">Al Alify Tech - Quran Tracker Online</footer>
 {% endblock %}
