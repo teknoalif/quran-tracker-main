@@ -17,7 +17,6 @@ KELAS_CHOICES = [(k, f"Kelas {k}") for k in DATA_SANTRI.keys()] if DATA_SANTRI e
 
 def kirim_ke_spreadsheet(data_list):
     try:
-        # Gunakan scope yang lebih luas
         scope = [
             "https://www.googleapis.com/auth/spreadsheets",
             "https://www.googleapis.com/auth/drive"
@@ -25,24 +24,26 @@ def kirim_ke_spreadsheet(data_list):
         creds_json = os.getenv("GOOGLE_CREDENTIALS")
         
         if not creds_json:
-            print("LOG: GOOGLE_CREDENTIALS tidak ditemukan!")
             return False
             
         creds_dict = json.loads(creds_json)
+        
+        # PERBAIKAN KRUSIAL: Pastikan format private_key benar
+        if 'private_key' in creds_dict:
+            creds_dict['private_key'] = creds_dict['private_key'].replace('\\n', '\n')
+            
         creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
         client = gspread.authorize(creds)
         
-        # Buka spreadsheet berdasarkan ID
         sheet = client.open_by_key(SPREADSHEET_ID)
-        # Pastikan menulis ke sheet pertama (Sheet1)
         worksheet = sheet.get_worksheet(0) 
         
-        # Gunakan append_rows untuk mengirim banyak data sekaligus
+        # Kirim data
         worksheet.append_rows(data_list, value_input_option='RAW')
-        print(f"LOG: Berhasil mengirim {len(data_list)} baris.")
         return True
     except Exception as e:
-        print(f"LOG ERROR SHEETS: {str(e)}")
+        # Ini akan muncul di logs Vercel jika gagal
+        print(f"Error detail: {str(e)}")
         return False
 
 def riwayat_laporan(request):
