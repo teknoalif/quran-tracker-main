@@ -145,7 +145,7 @@ def kirim_ke_spreadsheet(data_list):
             creds = ServiceAccountCredentials.from_json_keyfile_name(json_path, scope)
             
         client = gspread.authorize(creds)
-        spreadsheet_id = "1Rryo4OiOptMDxtX5c-RNf-fdtrgRZgE67stgcu37YQQ"
+        spreadsheet_id = "1gKsf0NS1MkEC5-GtN4eRFhDqWLYEaGFMhAkfEYJ8Fvc"
         worksheet = client.open_by_key(spreadsheet_id).get_worksheet(0)
         worksheet.append_rows(data_list)
         format_spreadsheet(worksheet)
