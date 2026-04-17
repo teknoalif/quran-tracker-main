@@ -5,10 +5,15 @@ from django.shortcuts import render, redirect
 from datetime import date, datetime
 from oauth2client.service_account import ServiceAccountCredentials
 # PANGGIL DATA DARI FILE SEBELAH
-from .data_santri import DATA_SANTRI
+try:
+    from .data_santri import DATA_SANTRI
+except ImportError:
+    DATA_SANTRI = {}
 
+# --- KONFIGURASI ---
 SPREADSHEET_ID = "1gKsf0NS1MkEC5-GtN4eRFhDqWLYEaGFMhAkfEYJ8Fvc"
-KELAS_CHOICES = [(k, f"Kelas {k}") for k in DATA_SANTRI.keys()]
+# Gunakan list comprehension yang aman jika DATA_SANTRI kosong
+KELAS_CHOICES = [(k, f"Kelas {k}") for k in DATA_SANTRI.keys()] if DATA_SANTRI else []
 
 def kirim_ke_spreadsheet(data_list):
     try:
@@ -21,6 +26,8 @@ def kirim_ke_spreadsheet(data_list):
             worksheet = client.open_by_key(SPREADSHEET_ID).get_worksheet(0)
             worksheet.append_rows(data_list)
             return True
+        else:
+            print("Error: GOOGLE_CREDENTIALS tidak ditemukan di Environment Variables.")
     except Exception as e:
         print(f"Error Sheets: {e}")
     return False
@@ -28,7 +35,9 @@ def kirim_ke_spreadsheet(data_list):
 def riwayat_laporan(request):
     tanggal_str = request.GET.get("tanggal", str(date.today()))
     kelas_selected = request.GET.get("kelas", "XA")
+    
     nama_list = DATA_SANTRI.get(kelas_selected, [])
+    # Santris diubah menjadi list of dict untuk looping di template
     santris = [{"id": i, "nama": nama} for i, nama in enumerate(nama_list)]
     
     return render(request, "monitoring/riwayat.html", {
@@ -39,6 +48,10 @@ def riwayat_laporan(request):
     })
 
 def simpan_laporan(request):
+    # Default redirect jika ada data yang hilang
+    tanggal = str(date.today())
+    kelas = "XA"
+    
     if request.method == "POST":
         tanggal = request.POST.get("tanggal")
         kelas = request.POST.get("kelas_hidden")
@@ -51,14 +64,36 @@ def simpan_laporan(request):
         data_sheet = []
         waktu = datetime.now().strftime("%d/%m/%Y %H:%M")
         
+        # Looping berdasarkan jumlah nama yang dikirim
         for i in range(len(names)):
-            awal = h_awal[i] if h_awal[i] else "0"
-            akhir = h_akhir[i] if h_akhir[i] else "0"
             try:
-                jml = int(akhir) - int(awal) + 1 if (int(akhir) >= int(awal) and int(awal) > 0) else 0
-            except: jml = 0
-            data_sheet.append([waktu, tanggal, "Guru", kelas, names[i], hadir[i], khatam[i], awal, akhir, jml])
+                # Pastikan input halaman adalah angka, jika kosong set ke 0
+                val_awal = h_awal[i] if (i < len(h_awal) and h_awal[i]) else "0"
+                val_akhir = h_akhir[i] if (i < len(h_akhir) and h_akhir[i]) else "0"
+                
+                # Hitung jumlah halaman (Logic: Akhir - Awal + 1)
+                awal_int = int(val_awal)
+                akhir_int = int(val_akhir)
+                jml = akhir_int - awal_int + 1 if (akhir_int >= awal_int and awal_int > 0) else 0
+                
+                # Susun baris untuk Google Sheets
+                data_sheet.append([
+                    waktu, 
+                    tanggal, 
+                    "Ustaz/Guru", # Nama penginput (Bisa request.user.username jika login aktif)
+                    kelas, 
+                    names[i], 
+                    hadir[i] if i < len(hadir) else "Hadir", 
+                    khatam[i] if i < len(khatam) else "0", 
+                    val_awal, 
+                    val_akhir, 
+                    jml
+                ])
+            except (ValueError, IndexError):
+                continue
             
         if data_sheet:
             kirim_ke_spreadsheet(data_sheet)
+            
+    # Kembalikan ke halaman utama dengan parameter filter yang sama
     return redirect(f"/?tanggal={tanggal}&kelas={kelas}")
