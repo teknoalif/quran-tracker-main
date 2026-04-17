@@ -16,47 +16,51 @@ SPREADSHEET_ID = "18knwd2i4FR0XOX0Bb22No66venosWUsma5DbTZ6u9_s"
 KELAS_CHOICES = [(k, f"Kelas {k}") for k in DATA_SANTRI.keys()] if DATA_SANTRI else []
 
 def get_gspread_client():
-    """Fungsi pembantu untuk autentikasi Google Sheets"""
+    """Fungsi pembantu untuk autentikasi Google Sheets dengan logging detail"""
     scope = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
     creds_json = os.getenv("GOOGLE_CREDENTIALS")
     
     if not creds_json:
-        print("DEBUG: GOOGLE_CREDENTIALS tidak ditemukan di Env Vercel")
         return None
     
     try:
-        # Bersihkan string dari karakter aneh dan pastikan JSON valid
+        # 1. Bersihkan string dari spasi atau karakter aneh
         creds_json = creds_json.strip()
         creds_dict = json.loads(creds_json)
         
+        # 2. Perbaikan format Private Key khusus untuk Vercel/Render/Heroku
         if 'private_key' in creds_dict:
-            # Handle karakter pindah baris yang sering rusak saat copy-paste ke Vercel
-            creds_dict['private_key'] = creds_dict['private_key'].replace('\\n', '\n')
+            key = creds_dict['private_key']
+            # Mengatasi masalah double backslash dan memastikan \n terbaca asli
+            if "\\n" in key:
+                key = key.replace("\\n", "\n")
+            creds_dict['private_key'] = key
         
         creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
         return gspread.authorize(creds)
     except Exception as e:
-        print(f"DEBUG Error Auth: {str(e)}")
-        return None
+        # Melempar error agar bisa ditangkap oleh fungsi pemanggil
+        raise Exception(f"Gagal memproses JSON/Kunci: {str(e)}")
 
 def kirim_ke_spreadsheet(data_list):
     try:
         client = get_gspread_client()
         if not client: 
-            return False, "Gagal Autentikasi. Cek GOOGLE_CREDENTIALS di Vercel."
+            return False, "Environment Variable 'GOOGLE_CREDENTIALS' belum diatur di Vercel."
         
         sheet = client.open_by_key(SPREADSHEET_ID)
-        # Mencoba buka Sheet1, jika gagal ambil tab pertama
-        try:
-            worksheet = sheet.worksheet("Sheet1")
-        except:
-            worksheet = sheet.get_worksheet(0)
-            
-        # USER_ENTERED membuat angka dan tanggal otomatis diformat benar oleh Google
+        worksheet = sheet.get_worksheet(0)
+        
         worksheet.append_rows(data_list, value_input_option='USER_ENTERED')
         return True, "Berhasil"
     except Exception as e:
-        return False, f"Google API Error: {str(e)}"
+        # Menampilkan pesan error yang lebih manusiawi di layar
+        error_msg = str(e)
+        if "reauth" in error_msg.lower():
+            error_msg = "Token habis atau kredensial salah. Cek JSON di Vercel."
+        elif "permission" in error_msg.lower():
+            error_msg = "Akses Ditolak. Pastikan email Service Account sudah jadi Editor di Google Sheet."
+        return False, error_msg
 
 def riwayat_laporan(request):
     tanggal_str = request.GET.get("tanggal", str(date.today()))
