@@ -16,34 +16,28 @@ KELAS_CHOICES = [(k, f"Kelas {k}") for k in DATA_SANTRI.keys()] if DATA_SANTRI e
 
 def kirim_ke_spreadsheet(data_list):
     try:
+        # Gunakan scope lengkap
         scope = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
         creds_json = os.getenv("GOOGLE_CREDENTIALS")
-        
-        if not creds_json:
-            print("LOG: GOOGLE_CREDENTIALS tidak terbaca di Vercel!")
-            return False
+        if not creds_json: return False
             
         creds_dict = json.loads(creds_json)
-        
-        # PERBAIKAN KRUSIAL: Menangani karakter kunci rahasia yang sering rusak di Vercel
+        # Bersihkan kunci (Kunci Utama)
         if 'private_key' in creds_dict:
-            # Mengganti karakter literal \n menjadi baris baru yang asli
-            raw_key = creds_dict['private_key']
-            creds_dict['private_key'] = raw_key.replace('\\n', '\n').replace('\n\n', '\n').strip()
+            creds_dict['private_key'] = creds_dict['private_key'].replace('\\n', '\n').strip()
             
         creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
         client = gspread.authorize(creds)
         
-        # Target Spreadsheet Baru
+        # Buka berdasarkan ID baru Bapak
         sheet = client.open_by_key("18knwd2i4FR0XOX0Bb22No66venosWUsma5DbTZ6u9_s")
         worksheet = sheet.get_worksheet(0) 
         
-        # Kirim Data
-        worksheet.append_rows(data_list, value_input_option='RAW')
-        print(f"LOG: Berhasil kirim {len(data_list)} data!")
+        # Gunakan 'USER_ENTERED' agar angka otomatis terbaca sebagai angka di Sheet
+        worksheet.append_rows(data_list, value_input_option='USER_ENTERED')
         return True
     except Exception as e:
-        print(f"LOG ERROR: {str(e)}")
+        print(f"DEBUG ERROR: {str(e)}") # Cek ini di logs Vercel jika masih kosong
         return False
 
 def riwayat_laporan(request):

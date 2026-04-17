@@ -69,6 +69,7 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 # Setting Whitenoise agar tetap jalan meskipun file static belum di-collect
 WHITENOISE_MANIFEST_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+# Ganti dari CompressedManifestStaticFilesStorage ke ini:
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
 
 TIME_ZONE = 'Asia/Jakarta'
