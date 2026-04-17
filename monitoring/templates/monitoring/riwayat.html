@@ -6,19 +6,24 @@
         <h5 class="mb-0 fw-bold">INPUT LAPORAN JAM PERTAMA AL QUR'AN</h5>
         <div id="clock" class="badge bg-white text-primary"></div>
     </div>
+
     <div class="card-body p-4">
         <form method="get" class="row g-3 mb-4 bg-light p-3 rounded border">
             <div class="col-md-4">
+                <label class="small fw-bold text-muted">Pilih Tanggal</label>
                 <input type="date" name="tanggal" class="form-control" value="{{ tanggal_sekarang }}" onchange="this.form.submit()">
             </div>
             <div class="col-md-4">
+                <label class="small fw-bold text-muted">Pilih Kelas</label>
                 <select name="kelas" class="form-select" onchange="this.form.submit()">
                     {% for k, v in kelas_list %}
                     <option value="{{ k }}" {% if k == kelas_selected %}selected{% endif %}>{{ v }}</option>
                     {% endfor %}
                 </select>
             </div>
-            <div class="col-md-4 text-end"><span id="timer-info" class="fw-bold"></span></div>
+            <div class="col-md-4 text-end d-flex align-items-end justify-content-end">
+                <span id="timer-info" class="fw-bold"></span>
+            </div>
         </form>
 
         <form method="post" action="{% url 'simpan_laporan' %}" id="formLaporan">
@@ -27,24 +32,24 @@
             <input type="hidden" name="kelas_hidden" value="{{ kelas_selected }}">
             
             <div class="table-responsive">
-                <table class="table align-middle border">
+                <table class="table align-middle border table-hover">
                     <thead class="table-dark text-center">
                         <tr>
                             <th>Nama Santri</th>
-                            <th>Status Hadir</th>
-                            <th>Khatam</th>
-                            <th>Hal. Mulai</th>
-                            <th>Hal. Akhir</th>
-                            <th style="width:100px">Status</th>
+                            <th style="width: 120px;">Status Hadir</th>
+                            <th style="width: 100px;">Khatam</th>
+                            <th style="width: 100px;">Mulai</th>
+                            <th style="width: 100px;">Akhir</th>
+                            <th style="width: 80px;">Ket</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for s in santris %}
                         <tr>
-                            <td class="fw-bold">
+                            <td class="fw-bold text-uppercase">
                                 {{ s.nama }}
-                                <input type="hidden" name="santri_id" value="{{ s.id }}">
                                 <input type="hidden" name="santri_nama" value="{{ s.nama }}">
+                                <input type="hidden" name="santri_id" value="{{ s.id }}">
                             </td>
                             <td>
                                 <select name="status_kehadiran" class="form-select form-select-sm">
@@ -54,22 +59,27 @@
                                     <option value="Alpa">Alpa</option>
                                 </select>
                             </td>
-                            <td><input type="number" name="jumlah_khatam" class="form-control form-control-sm" value="0"></td>
-                            <td><input type="number" name="hal_awal" class="form-control form-control-sm" placeholder="Mulai"></td>
-                            <td><input type="number" name="hal_akhir" class="form-control form-control-sm" placeholder="Akhir"></td>
+                            <td><input type="number" name="jumlah_khatam" class="form-control form-control-sm text-center" value="0" min="0"></td>
+                            <td><input type="number" name="hal_awal" class="form-control form-control-sm text-center" placeholder="Hal"></td>
+                            <td><input type="number" name="hal_akhir" class="form-control form-control-sm text-center" placeholder="Hal"></td>
                             <td class="text-center">
-                                <span class="badge bg-secondary">Baru</span>
+                                <span class="badge bg-secondary opacity-50">Baru</span>
                             </td>
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="6" class="text-center text-danger">Data santri tidak ditemukan untuk kelas ini.</td>
+                            <td colspan="6" class="text-center text-danger py-4">
+                                <i class="bi bi-exclamation-triangle-fill"></i> Data santri tidak ditemukan untuk kelas ini.
+                            </td>
                         </tr>
                         {% endfor %}
                     </tbody>
                 </table>
             </div>
-            <button type="submit" id="btnSimpan" class="btn btn-success w-100 btn-lg fw-bold mt-3">KIRIM DATANYA</button>
+            
+            <button type="submit" id="btnSimpan" class="btn btn-success w-100 btn-lg fw-bold mt-3 shadow">
+                <i class="bi bi-cloud-arrow-up-fill"></i> KIRIM DATA KE GOOGLE SHEETS
+            </button>
         </form>
     </div>
 </div>
@@ -82,14 +92,23 @@
         const btn = document.getElementById('btnSimpan'); 
         const info = document.getElementById('timer-info');
         
-        // Selalu aktifkan tombol untuk memudahkan Pak Alif mengetes
+        // Selalu aktif agar Pak Alif bisa memantau kapan saja
         btn.classList.remove('disabled');
-        info.innerText = "SISTEM SIAP KIRIM";
-        info.className = "fw-bold text-success";
+        info.innerText = "KONEKSI SHEETS SIAP";
+        info.className = "fw-bold text-success animate__animated animate__pulse animate__infinite";
     }
     setInterval(updateClock, 1000); 
     updateClock();
+
+    // Efek loading saat klik simpan
+    document.getElementById('formLaporan').onsubmit = function() {
+        const btn = document.getElementById('btnSimpan');
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> MENGIRIM DATA...';
+        btn.classList.add('disabled');
+    };
 </script>
 
-<footer class="mt-5 text-center py-3 text-muted small">Al Alify Tech - Quran Tracker Online</footer>
+<footer class="mt-5 text-center py-3 text-muted small">
+    <strong>Al Alify Tech</strong> - Quran Tracker Online v2.0
+</footer>
 {% endblock %}
